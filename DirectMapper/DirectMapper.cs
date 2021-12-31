@@ -80,7 +80,7 @@ namespace DirectMapper
              *          [Prop2] = source.[Prop2],   *
              *          ...
              *          [Prop3] = ((Func<object, string>)((srcProp) => srcProp.ToString()))(source.[Prop3]),  **
-             *          [Prop4] = ((Func<TSrcProp, TDestProp>)((srcProp) => {...}))(source.[Prop3]),  ***
+             *          [Prop4] = ((Func<TSrcProp, TDestProp>)((srcProp) => {...}))(source.[Prop4]),  ***
              *          ...
              *          [Propn] = source.[Propn],   *
              *      };
@@ -88,7 +88,7 @@ namespace DirectMapper
              *
              *  NOTES: *   : Normal copy process from source to destination
              *         **  : When Global ToString rule is active
-             *         *** : When there is a global rule on two types or a specific rule on a property is defined
+             *         *** : When either there is a global rule on two types or a specific rule on a property is defined
              *
              */
 
