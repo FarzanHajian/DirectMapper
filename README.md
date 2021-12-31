@@ -95,6 +95,7 @@ DMapper.BuildMapper<Product, ProductVM>()
     .WithRule<DateTime, string>(
         "IntroductionDate",
         src=> src.ToString("ddd, dd MMM yyyy hh:mm:ss")
+    )
     .Build();
 
 // Now IntroductionDate in in vm has data 
