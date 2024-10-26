@@ -1,4 +1,5 @@
 using DirectMapper.Test.Models;
+using FarzanHajian.DirectMapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
 

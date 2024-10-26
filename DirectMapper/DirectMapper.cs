@@ -11,7 +11,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace DirectMapper
+namespace FarzanHajian.DirectMapper
 {
     public static class DirectMapper
     {

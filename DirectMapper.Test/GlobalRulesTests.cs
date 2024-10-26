@@ -1,6 +1,8 @@
 ﻿using DirectMapper.Test.Models;
+using FarzanHajian.DirectMapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using DMapper = FarzanHajian.DirectMapper.DirectMapper;
 
 namespace DirectMapper.Test
 {
@@ -19,7 +21,7 @@ namespace DirectMapper.Test
         [TestInitialize]
         public void Initiaize()
         {
-            DirectMapper
+            DMapper
                .BuildGlobalRules()
                .WithRule<string, DateTime>((src) => DateTime.Parse(src))
                .Build();
