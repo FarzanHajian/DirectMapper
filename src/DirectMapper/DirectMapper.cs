@@ -1,15 +1,11 @@
 ﻿//
-// This file is published under BSD 3-Clause License.
+// This file contains the DirectMapper 1.0.0-rc1 source code and is published under BSD 3-Clause License.
 // Visit https://github.com/FarzanHajian/DirectMapper/blob/main/LICENSE for details.
 //
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace FarzanHajian.DirectMapper
 {

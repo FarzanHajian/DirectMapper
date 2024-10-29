@@ -1,8 +1,37 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <RootNamespace>FarzanHajian.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+      <TargetFramework>net6.0</TargetFramework>
+	  <ImplicitUsings>enable</ImplicitUsings>
+	  <Nullable>disable</Nullable>
+	  <RootNamespace>FarzanHajian.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>	  
+	  <PackageId>FarzanHajian.$(AssemblyName)</PackageId>
+	  <Title>$(AssemblyName)</Title>
+	  <Authors>Farzan Hajian</Authors>
+	  <Description>The simplest and lightest object mapper in the .NET world.</Description>
+	  <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+      <PackageProjectUrl>https://github.com/FarzanHajian/DirectMapper</PackageProjectUrl>
+	  <PackageReadmeFile>README.md</PackageReadmeFile>
+	  <RepositoryUrl>https://github.com/FarzanHajian/DirectMapper</RepositoryUrl>
+	  <PackageTags>object mapper</PackageTags>
+	  <AssemblyVersion>1.0.0.0</AssemblyVersion>
+	  <FileVersion>$(AssemblyVersion)</FileVersion>
+	  <Version>$(AssemblyVersion)-rc1</Version>
+	  <Copyright>© Farzan Hajian 2021</Copyright>
+	  <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+	  <PackageIcon>Logo.png</PackageIcon>
+	  <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\Assets\Logo.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>

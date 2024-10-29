@@ -1,13 +1,13 @@
 # DirectMapper
 DirectMapper is a simple and light object mapper for .NET. Since simplicity is a purpose, it only maps properties with same names. Here, there is no way to defined complex rules to map everything to everything.
 
-DirectMapper also meant to be light-weight thus a great choice for Blazor WASM applications.
+DirectMapper is also meant to be lightweight and thus a great choice for Blazor WASM applications.
 
 ## Installation
-For now, there is no Nuget package (I promise to provide one soon). Just copy the DirectMapper.cs file from DirectMapper project into to your own project.  
+The preferred method for installing the library is to copy the DirectMapper.cs file into the destination project, but for those who prefer installing using a package, the Classmate package is available on [NuGet](https://www.nuget.org/packages/FarzanHajian.DirectMapper/).
 
 ## Usage
-Let's assume we have a product model class and a product view model class.
+Let’s assume we have a product model class and a product view model class.
 
 ```csharp
 public class Product
@@ -39,10 +39,10 @@ public class ProductVM
 }
 ```
 
-We can use DirectMapper make clones (shallow copies) or view model objects from our product objects.
+We can use DirectMapper to make clones (shallow copies) or view model objects from our product objects.
 
 ```csharp
-using DirectMapper;
+using FarzanHajian.DirectMapper;
 
 .
 .
@@ -65,15 +65,15 @@ var clone = tea.DirectMap<Product, Product>();
 var vm = tea.DirectMap<Product, ProductVM>();
 ```
 
-For a property to be copied when source and destination data types differ (mapping model to view model in our example), following requirements must be satisfied:
-- A property with the exact same name as the source one must be available in the destination.
-- The destionation property must have a setter.
-- The destination property must have the exact same data type as the source one.
+For a property to be copied when source and destination data types differ (mapping model to view model in our example), the following requirements must be satisfied:
+- A property with the same name as the source must be available in the destination.
+- The destination property must have a setter.
+- The destination property must have the same data type as the source one.
 
-The first and the second requirements cannot be ignored. The third one on the other hand, can be compromised by defining rules (either global rules or type-specific ones).
+The first and the second requirements cannot be ignored. The third one, on the other hand, can be overridden by defining rules (either global rules or type-specific ones).
 
 ### Rules
-As discussed ealier, by default data types of source and destination properties must be the same. If there is a need for conversion, you will have to define rules.
+As discussed earlier, by default, data types of source and destination properties must be the same. If there is a need for conversion, you will have to define rules.
 
 There are two types of rules. **Entity-specific** and **global** and (of course) entity-specific rules have higher priority than global rules.
 
@@ -81,13 +81,13 @@ There are two types of rules. **Entity-specific** and **global** and (of course)
 
 **Rules are applied only when mapping between two different data types.**
 
-To following code snippet defines a rule to convert *IntroductionDate* property from *Product* to *ProductVM*.
+The following code snippet defines a rule to convert the *IntroductionDate* property from *Product* to *ProductVM*.
 
 ```csharp
 using DirectMapper;
 
-// Creating a shorter alias to make eveything easier 
-using DMapper = DirectMapper.DirectMapper;
+// Creating a shorter alias to make everything easier 
+using DMapper = FarzanHajian.DirectMapper.DirectMapper;
 .
 .
 .
@@ -98,7 +98,7 @@ DMapper.BuildMapper<Product, ProductVM>()
     )
     .Build();
 
-// Now IntroductionDate in in vm has data 
+// Now the following command can fill IntroductionDate in the view model with the proper data
 var vm = tea.DirectMap<Product, ProductVM>();
 
 ```
@@ -106,10 +106,10 @@ var vm = tea.DirectMap<Product, ProductVM>();
 Know let's assume you want to apply the above rule on all mappings (not only on mapping from Product to ProductVM). Here global rules can help.
 
 ```csharp
-using DirectMapper;
+using FarzanHajian.DirectMapper;
 
-// Creating a shorter alias to make eveything easier 
-using DMapper = DirectMapper.DirectMapper;
+// Creating a shorter alias to make everything easier 
+using DMapper = FarzanHajian.DirectMapper.DirectMapper;
 .
 .
 .
@@ -117,13 +117,16 @@ DMapper.BuildGlobalRules()
     .WithRule<DateTime, string>(src=> src.ToString("ddd, dd MMM yyyy hh:mm:ss"))
     .Build();
 
-// Now IntroductionDate in in vm has data 
+// Now the following command can fill IntroductionDate in the view model with the proper data
 var vm = tea.DirectMap<Product, ProductVM>();
 
-/* And other any mapping that involve converting a
-   DateTime to a String, the rule is utilized. */
+/* Keep in mind that this time we defined a global rule so the rule will be used for all mapping
+   that require a DateTime to string conversion. */
+.
+.
+.
 ```
-Global ToString rule is a special global to that is applied when a value must be mapped to a string data type and there is no specific and global rule found.
+Global *ToString* rule is a special global to that is applied when a value must be mapped to a string data type and there is no specific and global rule found.
 
 ```csharp
 DMapper.BuildGlobalRules()
@@ -134,8 +137,8 @@ DMapper.BuildGlobalRules()
 Note that the API follows the fluent syntax and you can chain rule definitions.
 
 ```csharp
-using DirectMapper;
-using DMapper = DirectMapper.DirectMapper;
+using FarzanHajian.DirectMapper;
+using DMapper = FarzanHajian.DirectMapper.DirectMapper;
 
 DMapper.BuildGlobalRules()
     .WithRule<DateTime, string>(src=> src.ToString("ddd, dd MMM yyyy hh:mm:ss"))
@@ -145,17 +148,19 @@ DMapper.BuildGlobalRules()
 
 DMapper.BuildMapper<Product, ProductVM>()
     .WithRule<DateTime, string>("IntroductionDate", src=> src.ToString("yyyy/MM/dd"))
-     // It may by useless to define a rule when source and destination have the same data type but it is possible :)
-    .WithRule<string, string>("Name", src=>src.ToUpper())
+    .WithRule<string, string>("Name", src=>src.ToUpper()) // It may be useful to define a rule when source and destination have the same data type
     .Build();
 
 DMapper.BuildMapper<Product, ProductVM2>()
     .   // rule 1
     .   // rule 2
     .   // rule n
-    .Build();
-
+    .Build();.
 .
 .
 .
 ```
+
+Besides the *DirectMap* method, the *DirectMapper* class contains two more methods that come in handy when mapping different objects:
+- *DirectMapRange<TSource, TDestination>* accepts a collection of objects and maps them to the destination data type altogether.
+- *GetMapper<TSource, TDestination>* returns the exact function generated to map objects of type TSource to TDestination. Although typically there is no need to invoke it manually, it is there in case it is needed.
