@@ -12,7 +12,7 @@ namespace FarzanHajian.DirectMapper
     public static class DirectMapper
     {
         private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(1);
-        private static Dictionary<string, object> funcCache = new Dictionary<string, object>();
+        private static readonly Dictionary<string, object> funcCache = new Dictionary<string, object>();
         private static GlobalRuleBuilder globalRuleBuilder = null;
 
         #region Main Functionalities
@@ -203,12 +203,12 @@ namespace FarzanHajian.DirectMapper
 
         #region Fluent API
 
-        public class CustomMapperBuider<TSource, TDestination>
+        public class TypeSpecificRuleBuider<TSource, TDestination>
         {
             // Key => Property name, Value => Mapping function
-            private Dictionary<string, Delegate> mappingRules = new Dictionary<string, Delegate>();
+            private readonly Dictionary<string, Delegate> mappingRules = new Dictionary<string, Delegate>();
 
-            public CustomMapperBuider<TSource, TDestination> WithRule<TSourceProperty, TDestinationProperty>(string propertyname, Func<TSourceProperty, TDestinationProperty> rule)
+            public TypeSpecificRuleBuider<TSource, TDestination> WithRule<TSourceProperty, TDestinationProperty>(string propertyname, Func<TSourceProperty, TDestinationProperty> rule)
             {
                 if (mappingRules.ContainsKey(propertyname))
                     throw new InvalidOperationException($"There is already a rule for property '{propertyname}' defined.");
@@ -219,7 +219,7 @@ namespace FarzanHajian.DirectMapper
 
             public void Build()
             {
-                if (funcCache.Count > 0) throw new InvalidOperationException("Defining entity rules must precede any mapping operation.");
+                if (funcCache.Count > 0) throw new InvalidOperationException("Defining type-specific rules must precede any mapping operation.");
                 Type sourceType = typeof(TSource);
                 Type destType = typeof(TDestination);
                 GetCopyFunction<TSource, TDestination>(sourceType, destType, mappingRules, true);
@@ -258,9 +258,9 @@ namespace FarzanHajian.DirectMapper
             }
         }
 
-        public static CustomMapperBuider<TSource, TDestination> BuildMapper<TSource, TDestination>()
+        public static TypeSpecificRuleBuider<TSource, TDestination> BuildMapper<TSource, TDestination>()
         {
-            return new CustomMapperBuider<TSource, TDestination>();
+            return new TypeSpecificRuleBuider<TSource, TDestination>();
         }
 
         public static GlobalRuleBuilder BuildGlobalRules()
