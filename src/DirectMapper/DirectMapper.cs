@@ -11,7 +11,6 @@ namespace FarzanHajian.DirectMapper
 {
     public static class DirectMapper
     {
-        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(1);
         private static readonly Dictionary<string, object> funcCache = new Dictionary<string, object>();
         private static GlobalRuleBuilder globalRuleBuilder = null;
 
@@ -19,52 +18,42 @@ namespace FarzanHajian.DirectMapper
 
         public static TDestination DirectMap<TSource, TDestination>(this TSource source)
         {
-            Type sourceType = typeof(TSource);
-            Type destType = typeof(TDestination);
-            return GetCopyFunction<TSource, TDestination>(sourceType, destType, null, true)(source);
+            if (source == null) return default;
+
+            Func<TSource, TDestination> funcCopy = GetCopyFunction<TSource, TDestination>();
+            funcCopy ??= PrepareMapperFunction<TSource, TDestination>(null);    // No specific rule is defined, force copy function creation.
+            return funcCopy(source);
         }
 
         public static IEnumerable<TDestination> DirectMapRange<TSource, TDestination>(this IEnumerable<TSource> source)
         {
             if (source == null) return null;
 
-            Type sourceType = typeof(TSource);
-            Type destType = typeof(TDestination);
-
-            Func<TSource, TDestination> funcCopy = GetCopyFunction<TSource, TDestination>(sourceType, destType, null, true);
+            Func<TSource, TDestination> funcCopy = GetCopyFunction<TSource, TDestination>();
+            funcCopy ??= PrepareMapperFunction<TSource, TDestination>(null);    // No specific rule is defined, force copy function creation.
             return source.Select(s => funcCopy(s));
         }
 
         public static Func<TSource, TDestination> GetMapper<TSource, TDestination>()
         {
-            Type sourceType = typeof(TSource);
-            Type destType = typeof(TDestination);
-            return GetCopyFunction<TSource, TDestination>(sourceType, destType, null, false);
+            return GetCopyFunction<TSource, TDestination>();
         }
 
-        private static Func<TSource, TDestination> GetCopyFunction<TSource, TDestination>(Type sourceType, Type destType, Dictionary<string, Delegate> rules, bool createIfNotExists)
+        private static Func<TSource, TDestination> GetCopyFunction<TSource, TDestination>()
         {
-            var hash = GetHash(sourceType, destType);
-            if (funcCache.ContainsKey(hash)) return (Func<TSource, TDestination>)funcCache[hash];
+            var hash = GetHash<TSource, TDestination>();
+            return funcCache.ContainsKey(hash) ? (Func<TSource, TDestination>)funcCache[hash] : null;
+        }
 
-            Func<TSource, TDestination> result = null;
-
-            semaphore.Wait();
-            if (funcCache.ContainsKey(hash))
-            {
-                result = (Func<TSource, TDestination>)funcCache[hash];
-            }
-            else if (createIfNotExists)
-            {
-                result = CreateCopyFunction<TSource, TDestination>(sourceType, destType, rules);
-                funcCache.Add(hash, result);
-            }
-            semaphore.Release();
-
+        private static Func<TSource, TDestination> PrepareMapperFunction<TSource, TDestination>(Dictionary<string, Delegate> specificRules)
+        {
+            Func<TSource, TDestination> result = CreateCopyFunction<TSource, TDestination>(specificRules);
+            var hash = GetHash<TSource, TDestination>();
+            funcCache.Add(hash, result);
             return result;
         }
 
-        private static Func<TSource, TDestination> CreateCopyFunction<TSource, TDestination>(Type sourceType, Type destType, Dictionary<string, Delegate> rules)
+        private static Func<TSource, TDestination> CreateCopyFunction<TSource, TDestination>(Dictionary<string, Delegate> specificRules)
         {
             /* Copy function would be similar to the following template:
              *
@@ -88,9 +77,11 @@ namespace FarzanHajian.DirectMapper
              *
              */
 
-            bool hasSpecificRules = rules != null && rules.Keys.Count > 0;
+            bool hasSpecificRules = specificRules != null && specificRules.Keys.Count > 0;
             bool hasGlobalRules = globalRuleBuilder != null;
             bool hasRules = hasSpecificRules || hasGlobalRules;
+            Type sourceType = typeof(TSource);
+            Type destType = typeof(TDestination);
 
             var functionParamEx = Expression.Parameter(sourceType, "source");
 
@@ -101,11 +92,11 @@ namespace FarzanHajian.DirectMapper
             {
                 var srcPropAccessEx = Expression.Property(functionParamEx, sourceType, property.Name);
 
-                if (hasSpecificRules && rules.ContainsKey(property.Name))
+                if (hasSpecificRules && specificRules.ContainsKey(property.Name))
                 {
                     try
                     {
-                        var ruleCallEx = Expression.Invoke(Expression.Constant(rules[property.Name]), srcPropAccessEx);
+                        var ruleCallEx = Expression.Invoke(Expression.Constant(specificRules[property.Name]), srcPropAccessEx);
                         var bindingEx = Expression.Bind(property, ruleCallEx);
                         assignmentExs.Add(bindingEx);
                         continue;
@@ -151,7 +142,7 @@ namespace FarzanHajian.DirectMapper
                 }
                 catch (ArgumentException)
                 {
-                    throw new InvalidOperationException($"Property '{property.Name}' has different data types in source and destination. A rule is needed.");
+                    throw new InvalidOperationException($"Property '{property.Name}' has different data type in source and destination. A rule is needed for mapping this property.");
                 }
             }
 
@@ -199,6 +190,18 @@ namespace FarzanHajian.DirectMapper
             return $"{sourceType.AssemblyQualifiedName}:{destinationType.AssemblyQualifiedName}";
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static string GetHash<TSource, TDestination>()
+        {
+            return GetHash(typeof(TSource), typeof(TDestination));
+        }
+
+        internal static void ResetForNextTest()
+        {
+            funcCache.Clear();
+            globalRuleBuilder = null;
+        }
+
         #endregion Main Functionalities
 
         #region Fluent API
@@ -219,28 +222,24 @@ namespace FarzanHajian.DirectMapper
 
             public void Build()
             {
-                if (funcCache.Count > 0) throw new InvalidOperationException("Defining type-specific rules must precede any mapping operation.");
-                Type sourceType = typeof(TSource);
-                Type destType = typeof(TDestination);
-                GetCopyFunction<TSource, TDestination>(sourceType, destType, mappingRules, true);
+                if (GetCopyFunction<TSource, TDestination>() is not null)
+                    throw new InvalidOperationException($"Mapping rules are already defined from {typeof(TSource).FullName} to {typeof(TDestination).FullName}.");
+                PrepareMapperFunction<TSource, TDestination>(mappingRules);
             }
         }
 
         public class GlobalRuleBuilder
         {
             // Key => Hash code, Value => Mapping function
-            internal Dictionary<string, Delegate> GlobalRules { get; private set; } = new Dictionary<string, Delegate>();
+            internal Dictionary<string, Delegate> GlobalRules { get; } = new Dictionary<string, Delegate>();
 
             internal bool IsGlobalToStringActive { get; private set; } = false;
 
-            public GlobalRuleBuilder WithRule<TSourceType, TDestinationType>(Func<TSourceType, TDestinationType> rule)
+            public GlobalRuleBuilder WithRule<TSource, TDestination>(Func<TSource, TDestination> rule)
             {
-                Type sourceType = typeof(TSourceType);
-                Type destType = typeof(TDestinationType);
-                var hash = GetHash(sourceType, destType);
-
+                var hash = GetHash<TSource, TDestination>();
                 if (GlobalRules.ContainsKey(hash))
-                    throw new InvalidOperationException($"There is already a rule to convert '{sourceType.Name}' to '{destType.Name}' defined.");
+                    throw new InvalidOperationException($"A global rule is already defined from '{typeof(TSource).FullName}' to '{typeof(TDestination).FullName}'.");
 
                 GlobalRules.Add(hash, rule);
                 return this;
@@ -248,12 +247,16 @@ namespace FarzanHajian.DirectMapper
 
             public GlobalRuleBuilder WithGlobalToString()
             {
+                if (IsGlobalToStringActive)
+                    throw new InvalidOperationException("The global ToString rule is already defined.");
                 IsGlobalToStringActive = true;
                 return this;
             }
 
             public void Build()
             {
+                if (globalRuleBuilder != null) throw new InvalidOperationException("Global rules are already defined.");
+                if (funcCache.Count > 0) throw new InvalidOperationException("Global rules must be defined before type-specific rules are defined.");
                 globalRuleBuilder = this;
             }
         }
@@ -265,8 +268,6 @@ namespace FarzanHajian.DirectMapper
 
         public static GlobalRuleBuilder BuildGlobalRules()
         {
-            if (globalRuleBuilder != null) throw new InvalidOperationException("Global rules are already defined.");
-            if (funcCache.Count > 0) throw new InvalidOperationException("Defining global rules must precede any mapping operation.");
             return new GlobalRuleBuilder();
         }
 

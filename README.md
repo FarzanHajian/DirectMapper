@@ -39,7 +39,7 @@ public class ProductVM
 }
 ```
 
-We can use DirectMapper to make clones (shallow copies) or view model objects from our product objects.
+We can use DirectMapper to make clones (shallow copies) of view model objects from our product objects.
 
 ```csharp
 using FarzanHajian.DirectMapper;
@@ -70,16 +70,19 @@ For a property to be copied when source and destination data types differ (mappi
 - The destination property must have a setter.
 - The destination property must have the same data type as the source one.
 
-The first and the second requirements cannot be ignored. The third one, on the other hand, can be overridden by defining rules (either global rules or type-specific ones).
+The first and the second requirements cannot be ignored. The third one, on the other hand, can be overridden by defining rules.
 
 ### Rules
 As discussed earlier, by default, data types of source and destination properties must be the same. If there is a need for conversion, you will have to define rules.
 
-There are two types of rules. **Entity-specific** and **global** and (of course) entity-specific rules have higher priority than global rules.
+There are two types of rules:
+- **Type-specific** rules define how objects of a certain type must be mapped to objects of another type.
+- **Global** rules are general rules that must be applied in the absence of suitable type-specific rules.
 
-**Keep in mind that rules must be defined before any mapping operations.**
-
-**Rules are applied only when mapping between two different data types.**
+Here is a list of items to bear in mind when using rules:
+- Type-specific rules have higher priority than global rules.
+- Global rules must be defined before type-specific rules are defined.
+- Rules are applied only when source and destination properties have different data types.
 
 The following code snippet defines a rule to convert the *IntroductionDate* property from *Product* to *ProductVM*.
 
@@ -126,7 +129,7 @@ var vm = tea.DirectMap<Product, ProductVM>();
 .
 .
 ```
-Global *ToString* rule is a special global to that is applied when a value must be mapped to a string data type and there is no specific and global rule found.
+The global **ToString** rule is a special global to that is applied when a value must be mapped to a string data type and there is no type-specific and global rule available.
 
 ```csharp
 DMapper.BuildGlobalRules()
