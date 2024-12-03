@@ -7,24 +7,48 @@ using DMapper = FarzanHajian.DirectMapper.DirectMapper;
 namespace DirectMapper.Test
 {
     [TestClass]
-    public class GlobalRulesTests : TestBase
+    public class GlobalRulesTests
     {
-        [TestMethod]
-        public void GlobalStringToDateTimeRule()
+        private static Customer customer = null!;
+        private static Purchase purchase = null!;
+
+        [ClassInitialize]
+        public static void Initialize(TestContext ctx)
         {
-            var srcObject = customers[0];
-            var destObject = srcObject.DirectMap<Customer, CustomerViewModel>();
-            Assert.AreEqual(destObject.BirthDate, DateTime.Parse(srcObject.BirthDate), nameof(CustomerViewModel.BirthDate));
-            Assert.AreEqual(destObject.DateFirstPurchase, DateTime.Parse(srcObject.DateFirstPurchase), nameof(CustomerViewModel.DateFirstPurchase));
+            customer = Fake.GetFakeCustomer();
+            purchase = Fake.GetFakePurchase();
+
+            DMapper.ResetForNextTest();
+
+            DMapper
+                .BuildGlobalRules()
+                .WithRule<string, DateTime>(src => DateTime.Parse(src))
+                .WithRule<DateTime, string>(src => src.ToString("yyyy/mm/dd"))
+                .WithRule<string, Genders>(src => Enum.TryParse(src, out Genders res) ? res : throw new Exception("Invalid Gender"))
+                .WithGlobalToString()
+                .Build();
         }
 
-        [TestInitialize]
-        public void Initiaize()
+        [TestMethod]
+        public void GlobalRules()
         {
-            DMapper
-               .BuildGlobalRules()
-               .WithRule<string, DateTime>((src) => DateTime.Parse(src))
-               .Build();
+            var cust = customer;
+            var custVM = cust.DirectMap<Customer, CustomerViewModel>();
+            var pur = purchase;
+            var purVM = pur.DirectMap<Purchase, PurchaseViewModel>();
+
+            // DateTime -> String
+            Assert.AreEqual(custVM.BirthDate, cust.BirthDate.ToString("yyyy/mm/dd"), nameof(CustomerViewModel.BirthDate));
+            Assert.AreEqual(purVM.PurchaseDate, pur.PurchaseDate.ToString("yyyy/mm/dd"), nameof(PurchaseViewModel.PurchaseDate));
+
+            // String -> DateTime
+            Assert.AreEqual(custVM.DateOfFirstPurchase, DateTime.Parse(cust.DateOfFirstPurchase), nameof(CustomerViewModel.DateOfFirstPurchase));
+
+            // String -> Genders
+            Assert.AreEqual(Enum.Parse<Genders>(cust.Gender), custVM.Gender, nameof(CustomerViewModel.Gender));
+
+            // Global ToString
+            Assert.AreEqual(cust.MaritalStatus.ToString(), custVM.MaritalStatus, nameof (CustomerViewModel.MaritalStatus));
         }
     }
 }

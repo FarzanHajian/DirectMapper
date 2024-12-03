@@ -1,6 +1,4 @@
-﻿using DirectMapper.Test.Models;
-using Mighty;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -8,42 +6,35 @@ namespace DirectMapper.Test
 {
     internal static class Helper
     {
-        public static List<Customer> LoadCustomers()
+        public static bool ArePropertiesEqual<T>(T? first, T? second)
         {
-            var db = new MightyOrm<Customer>(
-                "ProviderName=System.Data.SqlClient; Data Source=.;Initial Catalog=AdventureWorksDW2019; Integrated Security=sspi",
-                "DimCustomer",
-                "CustomerKey"
-            );
+            bool isFirstNull = first is null;
+            bool isSecondNull = second is null;
+            if (isFirstNull && isSecondNull) return true;   // Both are null
+            if (isFirstNull ^ isSecondNull) return false;   // One is null and the other is not null
 
-            return db.All().ToList();
-        }
-
-        public static bool ArePropertiesEqual<T>(T first, T second)
-        {
-            if (first == null && second == null) return true;
-            if ((first == null && second != null) || first != null && second == null) return false;
-
-            foreach (var property in typeof(T).GetProperties())
+            foreach (PropertyInfo property in typeof(T).GetProperties())
             {
-                if (property?.GetValue(first)?.Equals(property?.GetValue(second)) == false) return false;
+                if (property.GetValue(first)?.Equals(property.GetValue(second)) == false) return false;
             }
             return true;
         }
 
-        public static bool ArePropertiesMatched<TFirst, TSecond>(TFirst first, TSecond second)
+        public static bool AreCommonPropertiesEqual<TFirst, TSecond>(TFirst? first, TSecond? second, params string[] ignoredProperties)
         {
-            if (first == null && second == null) return true;
-            if ((first == null && second != null) || first != null && second == null) return false;
+            bool isFirstNull = first is null;
+            bool isSecondNull = second is null;
+            if (isFirstNull && isSecondNull) return true;   // Both are null
+            if (isFirstNull ^ isSecondNull) return false;   // One is null and the other is not null
 
             var firstProperties = typeof(TFirst).GetProperties();
             var secondProperties = typeof(TSecond).GetProperties();
 
-            foreach (var property in firstProperties)
+            foreach (PropertyInfo firstProp in firstProperties.Where(p => !ignoredProperties.Contains(p.Name)))
             {
-                if (secondProperties.FirstOrDefault(p => p.Name == property.Name && p.PropertyType == property.PropertyType) is PropertyInfo secondProperty)
+                if (secondProperties.FirstOrDefault(p => p.Name == firstProp.Name && p.PropertyType == firstProp.PropertyType) is PropertyInfo secondProperty)
                 {
-                    if (property.GetValue(first)?.Equals(secondProperty.GetValue(second)) == false) return false;
+                    if (firstProp.GetValue(first)?.Equals(secondProperty.GetValue(second)) == false) return false;
                 }
             }
             return true;
@@ -51,16 +42,18 @@ namespace DirectMapper.Test
 
         public static bool AreItemsEqual<TItem>(IEnumerable<TItem> first, IEnumerable<TItem> second)
         {
-            if (first == null && second == null) return true;
-            if ((first == null && second != null) || first != null && second == null) return false;
+            bool isFirstNull = first is null;
+            bool isSecondNull = second is null;
+            if (isFirstNull && isSecondNull) return true;   // Both are null
+            if (isFirstNull ^ isSecondNull) return false;   // One is null and the other is not null
 
-            List<TItem> firstList = first.ToList();
-            List<TItem> secondList = second.ToList();
+            var firstList = first!.ToList();
+            var secondList = second!.ToList();
             if (firstList.Count != secondList.Count) return false;
 
             for (int i = 0; i < firstList.Count; i++)
             {
-                if (!firstList[i].Equals(secondList[i])) return false;
+                if (ArePropertiesEqual(firstList[i], secondList[i]) == false) return false;
             }
 
             return true;
@@ -68,17 +61,19 @@ namespace DirectMapper.Test
 
         public static bool AreItemsMatched<TFirstItem, TSecondItem>(IEnumerable<TFirstItem> first, IEnumerable<TSecondItem> second)
         {
-            //if (first == null && second == null) return true;
-            //if ((first == null && second != null) || first != null && second == null) return false;
+            bool isFirstNull = first is null;
+            bool isSecondNull = second is null;
+            if (isFirstNull && isSecondNull) return true;   // Both are null
+            if (isFirstNull ^ isSecondNull) return false;   // One is null and the other is not null
 
-            //List<TItem> firstList = first.ToList();
-            //List<TItem> secondList = second.ToList();
-            //if (firstList.Count != secondList.Count) return false;
+            var firstList = first!.ToList();
+            var secondList = second!.ToList();
+            if (firstList.Count != secondList.Count) return false;
 
-            //for (int i = 0; i < firstList.Count; i++)
-            //{
-            //    if (!firstList[i].Equals(secondList[i])) return false;
-            //}
+            for (int i = 0; i < firstList.Count; i++)
+            {
+                if (AreCommonPropertiesEqual(firstList[i], secondList[i]) == false) return false;
+            }
 
             return true;
         }
