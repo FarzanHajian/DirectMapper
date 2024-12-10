@@ -1,5 +1,5 @@
 ﻿//
-// This file contains the DirectMapper 1.0.0-rc1 source code and is published under BSD 3-Clause License.
+// This file contains the DirectMapper 1.0.0 source code and is published under BSD 3-Clause License.
 // Visit https://github.com/FarzanHajian/DirectMapper/blob/main/LICENSE for details.
 //
 
